@@ -202,12 +202,13 @@ class ChessEnvV1(gym.Env):
         self.possible_moves = self.get_possible_moves(state=self.state, player=WHITE)
         # If player chooses black, make white openent move first
         if self.player == BLACK:
-            white_first_move = self.opponent_policy(self)
-            white_first_action = self.move_to_action(white_first_move)
-            # make move
-            # self.state, _, _, _ = self.step(white_first_action)
-            self.state, _, _ = self.player_move(white_first_action)
-            self.move_count += 1
+            if self.opponent_policy is not None:
+                white_first_move = self.opponent_policy(self)
+                white_first_action = self.move_to_action(white_first_move)
+                # make move
+                # self.state, _, _, _ = self.step(white_first_action)
+                self.state, _, _ = self.player_move(white_first_action)
+                self.move_count += 1
             self.current_player = BLACK
             self.possible_moves = self.get_possible_moves(state=self.state, player=BLACK)
         return self.state
@@ -333,9 +334,9 @@ class ChessEnvV1(gym.Env):
 
     def player_can_castle(self, player):
         if player == WHITE:
-            return self.white_king_castle_possible and self.white_queen_castle_possible
+            return self.white_king_castle_possible or self.white_queen_castle_possible
         else:
-            return self.black_king_castle_possible and self.black_queen_castle_possible
+            return self.black_king_castle_possible or self.black_queen_castle_possible
 
     def get_other_player(self, player):
         if player == WHITE:
@@ -523,7 +524,7 @@ class ChessEnvV1(gym.Env):
         if type(move) is list:
             _from = move[0][0] * 8 + move[0][1]
             _to = move[1][0] * 8 + move[1][1]
-            return _from * 64 + _to
+            return int(_from) * 64 + int(_to)
         if move == CASTLE_KING_SIDE_WHITE:
             return 64 * 64
         elif move == CASTLE_QUEEN_SIDE_WHITE:
@@ -858,10 +859,10 @@ class ChessEnvV1(gym.Env):
             empty_2 = (0, 6)
             rook = (0, 7)
             if (
-                state[king] == KING_ID
+                state[king] == -KING_ID
                 and state[empty_1] == EMPTY_SQUARE_ID
                 and state[empty_2] == EMPTY_SQUARE_ID
-                and state[rook] == ROOK_ID
+                and state[rook] == -ROOK_ID
                 and not squares_under_attack_hashmap[king]
                 and not squares_under_attack_hashmap[empty_1]
                 and not squares_under_attack_hashmap[empty_2]
